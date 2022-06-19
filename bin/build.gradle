@@ -1,0 +1,87 @@
+buildscript {
+    ext {
+        serenityCoreVersion = '3.2.0'
+    }
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+      classpath("net.serenity-bdd:serenity-gradle-plugin:${serenityCoreVersion}")
+      classpath("net.serenity-bdd:serenity-single-page-report:${serenityCoreVersion}")
+    }
+}
+
+plugins {
+    id 'pmd'
+    id 'java'
+}
+
+apply plugin: 'java'
+apply plugin: 'net.serenity-bdd.aggregator'
+
+defaultTasks 'clean', 'test', 'aggregate'
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+sourceCompatibility = 11
+targetCompatibility = 11
+
+ext {
+  serenityScreebplayVersion = '3.1.15'
+  serenityCucumberVersion = '3.1.15'
+  lombokVersion = '1.18.2'
+}
+
+dependencies {
+  // test - junit5
+  testImplementation platform("org.junit:junit-bom:5.8.1"),
+    "org.junit.vintage:junit-vintage-engine",
+    "org.junit.platform:junit-platform-launcher",
+    "org.junit.jupiter:junit-jupiter-engine"
+  // test - serenity
+  testImplementation "net.serenity-bdd:serenity-screenplay:${serenityScreebplayVersion}",
+    "net.serenity-bdd:serenity-junit5:${serenityCucumberVersion}"
+}
+
+test {
+    reports {
+        html.enabled = true
+    }
+
+    // Enable JUnit 5 (Gradle 4.6+).
+    useJUnitPlatform()
+
+    // Always run tests, even when nothing changed.
+    //dependsOn 'cleanTest'
+
+    // Show test results.
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// Configure PMD.
+pmd {
+    ignoreFailures = true
+    toolVersion = "6.23.0"                             // The version of PMD to use.
+    ruleSetFiles = files("config/pmd/pmd.xml")         // The location of the configuration file.
+    ruleSets = []                                      // Ignore the default rules. The ones this config
+                                                       // uses are set with the ruleSetFiles property.
+}
+
+serenity {
+    // Specify the root package of any JUnit acceptance tests to appear in the Serenity report
+    testRoot = "starter"
+    reports = ["single-page-html"]
+    // Specify the root directory of any Cucumber feature files
+    requirementsDir = "src/test/resources/features"
+
+}
+
+gradle.startParameter.continueOnFailure = true
+
+test.finalizedBy(aggregate)
